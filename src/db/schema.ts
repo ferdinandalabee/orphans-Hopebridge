@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, varchar, integer, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, varchar, integer, boolean, serial, date, pgEnum } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
 
 // Users table - stores basic user information from Clerk
@@ -88,11 +88,93 @@ export const childSchema = z.object({
   interests: z.string().optional(),
 });
 
-// Types
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
+// Activity status enum
+export const activityStatusEnum = pgEnum('activity_status', ['scheduled', 'completed', 'cancelled'])
+
+// Activities table
+export const activities = pgTable('activities', {
+  id: serial('id').primaryKey(),
+  volunteerId: text('volunteer_id').notNull()
+    .references(() => volunteerProfiles.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  date: date('date').notNull(),
+  timeSlot: text('time_slot').notNull(),
+  notes: text('notes'),
+  status: activityStatusEnum('status').notNull().default('scheduled'),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Volunteer profiles table
+export const volunteerProfiles = pgTable('volunteer_profiles', {
+  id: varchar('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }).notNull(),
+  phoneNumber: varchar('phone_number', { length: 20 }).notNull(),
+  address: text('address').notNull(),
+  city: varchar('city', { length: 100 }).notNull(),
+  zipCode: varchar('zip_code', { length: 10 }).notNull(),
+  dateOfBirth: timestamp('date_of_birth').notNull(),
+  emergencyContactPhone: varchar('emergency_contact_phone', { length: 20 }).notNull(),
+  skills: text('skills').array().notNull().default([]),
+  availability: text('availability').array().notNull().default([]),
+  about: text('about').notNull(),
+  profileComplete: boolean('profile_complete').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Zod schema for volunteer profile
+export const volunteerProfileSchema = z.object({
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  phoneNumber: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .regex(/^\d+$/, 'Phone number can only contain numbers'),
+  address: z.string().min(5, 'Address must be at least 5 characters'),
+  city: z.string().min(2, 'City is required'),
+  zipCode: z.string()
+    .min(5, 'ZIP code must be 5 digits')
+    .regex(/^\d+$/, 'ZIP code can only contain numbers'),
+  dateOfBirth: z.union([
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Use YYYY-MM-DD'),
+    z.date()
+  ]).transform(val => new Date(val)),
+  emergencyContactPhone: z.string()
+    .min(10, 'Emergency contact phone must be at least 10 digits')
+    .regex(/^\d+$/, 'Phone number can only contain numbers'),
+  skills: z.array(z.string())
+    .min(1, 'Please select at least one skill')
+    .default([]),
+  availability: z.array(z.string())
+    .min(1, 'Please select at least one availability option')
+    .default([]),
+  about: z.string()
+    .min(20, 'Please tell us more about yourself (at least 20 characters)')
+    .max(1000, 'About section is too long (max 1000 characters)'),
+  profileComplete: z.boolean().default(true)
+});
+
+// Base types
+type UserBase = typeof users.$inferSelect;
+type NewUserBase = typeof users.$inferInsert;
+
+// Extended types with relationships
+export type User = UserBase & {
+  volunteerProfile?: VolunteerProfile;
+};
+
+export type NewUser = NewUserBase;
 export type Orphanage = typeof orphanages.$inferSelect;
 export type NewOrphanage = typeof orphanages.$inferInsert;
+export type VolunteerProfile = typeof volunteerProfiles.$inferSelect;
+export type NewVolunteerProfile = Omit<typeof volunteerProfiles.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>;
+
+export type Activity = typeof activities.$inferSelect;
+export type NewActivity = typeof activities.$inferInsert;
+
 // Extend the Child type to include the image file for form handling
 export type Child = typeof children.$inferSelect;
 export type NewChild = Omit<typeof children.$inferInsert, 'photoUrl'> & {

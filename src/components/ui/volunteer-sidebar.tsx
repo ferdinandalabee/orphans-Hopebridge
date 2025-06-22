@@ -1,22 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Home, Users, Book, Calendar, Settings, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { usePathname } from 'next/navigation';
+import { Home, Calendar, User, LogOut } from 'lucide-react';
 import { cn } from '@/db/utils';
-import { SignOutButton } from '@clerk/nextjs';
 
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard/orphanage', icon: Home },
-  { name: 'Children', href: '/dashboard/orphanage/children', icon: Users },
-  { name: 'Courses', href: '/dashboard/orphanage/courses', icon: Book },  // Added Book icon import
-  { name: 'Volunteers', href: '/dashboard/orphanage/volunteers', icon: Users },
-  { name: 'Activities', href: '/dashboard/orphanage/activities', icon: Calendar },
-  { name: 'Settings', href: '/dashboard/orphanage/settings', icon: Settings },
+const volunteerNavItems = [
+  { name: 'Dashboard', href: '/dashboard/volunteer', icon: Home },
+  { name: 'My Activities', href: '/dashboard/volunteer/activities', icon: Calendar },
+  { name: 'Profile', href: '/dashboard/volunteer/profile', icon: User },
 ];
 
-export function Sidebar() {
+export function VolunteerSidebar() {
   const pathname = usePathname();
 
   return (
@@ -24,11 +19,11 @@ export function Sidebar() {
       <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           <div className="flex items-center flex-shrink-0 px-4">
-            <h1 className="text-xl font-bold text-gray-900">HopeBridge</h1>
+            <h1 className="text-xl font-bold text-gray-900">Volunteer Portal</h1>
           </div>
           <div className="mt-5 flex-1 flex flex-col">
             <nav className="flex-1 px-2 space-y-1">
-              {navItems.map((item) => {
+              {volunteerNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 
@@ -56,13 +51,19 @@ export function Sidebar() {
               })}
             </nav>
           </div>
-          <div className="px-4 py-4 border-t border-gray-200">
-            <SignOutButton redirectUrl="/">
-              <Button variant="ghost" className="w-full justify-start">
-                <LogOut className="mr-3 h-5 w-5" />
-                Sign out
-              </Button>
-            </SignOutButton>
+        </div>
+        <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <div className="flex-shrink-0 group block">
+            <div className="flex items-center">
+              <div>
+                <LogOut className="h-6 w-6 text-gray-500" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                  Sign out
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

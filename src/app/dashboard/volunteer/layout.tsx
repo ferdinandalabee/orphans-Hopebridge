@@ -1,13 +1,13 @@
 import { ReactNode } from 'react';
-import { Sidebar } from '@/components/ui/sidebar';
+import { VolunteerSidebar } from '@/components/ui/volunteer-sidebar';
 import { UserButton } from '@clerk/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { volunteerProfiles, orphanages } from '@/db/schema';
+import { volunteerProfiles } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-export default async function DashboardLayout({
+export default async function VolunteerLayout({
   children,
 }: {
   children: ReactNode;
@@ -18,34 +18,24 @@ export default async function DashboardLayout({
     redirect('/sign-in');
   }
 
-  // Check if user is a volunteer or orphanage admin
-  const [volunteer, orphanage] = await Promise.all([
-    db.query.volunteerProfiles.findFirst({
-      where: eq(volunteerProfiles.userId, userId),
-    }),
-    db.query.orphanages.findFirst({
-      where: eq(orphanages.userId, userId),
-    }),
-  ]);
+  // Check if user is a volunteer
+  const volunteer = await db.query.volunteerProfiles.findFirst({
+    where: eq(volunteerProfiles.userId, userId),
+  });
 
-  // Redirect to the appropriate dashboard based on user role
-  if (volunteer) {
-    redirect('/dashboard/volunteer');
-  } else if (orphanage) {
+  // If not a volunteer, redirect to the appropriate dashboard
+  if (!volunteer) {
     redirect('/dashboard/orphanage');
-  } else {
-    // If user has neither role, redirect to profile completion
-    redirect('/onboarding');
   }
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <VolunteerSidebar />
       <div className="flex-1 flex flex-col">
         <header className="border-b">
           <div className="container flex h-16 items-center px-4">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-bold">HomeBridge</h1>
+              <h1 className="text-xl font-bold">Volunteer Dashboard</h1>
             </div>
             <div className="ml-auto flex items-center space-x-4">
               <UserButton afterSignOutUrl='/' />

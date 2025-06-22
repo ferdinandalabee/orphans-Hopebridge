@@ -134,29 +134,98 @@ export default function AddChildPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Date of Birth</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !dateOfBirth && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateOfBirth ? format(dateOfBirth, 'PPP') : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateOfBirth}
-                  onSelect={(date) => setValue('dateOfBirth', date!)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+            <div className="relative">
+              <Input
+                id="dateOfBirth"
+                type="date"
+                className="pr-10"
+                value={dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  const dateValue = e.target.value;
+                  if (dateValue) {
+                    // Parse the date string in YYYY-MM-DD format
+                    const [year, month, day] = dateValue.split('-').map(Number);
+                    const date = new Date(year, month - 1, day);
+                    if (!isNaN(date.getTime())) { // Check if valid date
+                      setValue('dateOfBirth', date);
+                    }
+                  }
+                }}
+                onFocus={(e) => {
+                  // Show date picker dropdown when input is focused on mobile
+                  if (window.innerWidth < 768) {
+                    e.target.showPicker();
+                  }
+                }}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="sr-only">Open calendar</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-3">
+                    <div className="mb-2 grid grid-cols-2 gap-2">
+                      <select
+                        className="rounded-md border p-2 text-sm"
+                        value={dateOfBirth?.getFullYear() || new Date().getFullYear()}
+                        onChange={(e) => {
+                          const year = parseInt(e.target.value);
+                          const newDate = dateOfBirth || new Date();
+                          newDate.setFullYear(year);
+                          setValue('dateOfBirth', newDate);
+                        }}
+                      >
+                        {Array.from({ length: 100 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          return (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <select
+                        className="rounded-md border p-2 text-sm"
+                        value={dateOfBirth?.getMonth() || 0}
+                        onChange={(e) => {
+                          const month = parseInt(e.target.value);
+                          const newDate = dateOfBirth || new Date();
+                          newDate.setMonth(month);
+                          setValue('dateOfBirth', newDate);
+                        }}
+                      >
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <option key={i} value={i}>
+                            {new Date(0, i).toLocaleString('default', { month: 'long' })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={dateOfBirth || undefined}
+                      onSelect={(date) => setValue('dateOfBirth', date!)}
+                      defaultMonth={dateOfBirth || new Date()}
+                      disabled={(date) => date > new Date()}
+                      className="rounded-md border"
+                      captionLayout="dropdown-buttons"
+                      fromYear={new Date().getFullYear() - 100}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
             {errors.dateOfBirth && (
               <p className="text-sm text-red-500">{errors.dateOfBirth.message}</p>
             )}
